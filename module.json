@@ -1,0 +1,24 @@
+{
+  "name": "apply-poison",
+  "title": "Apply Poison",
+  "description": "A Foundry VTT module to apply poison to weapons.",
+  "version": "0.1.0",
+  "author": "Kazgul1987",
+  "minimumCoreVersion": "0.8.6",
+  "compatibleCoreVersion": "0.8.6",
+  "scripts": [
+    "module.js",
+    "main.js"
+  ],
+ // "dependencies": {
+ //   "some-module": "1.2.3"
+  //},
+  "license": "MIT",
+  "manifest": true,
+  "download": "https://github.com/your/repo/archive/master.zip",
+  "keywords": [
+    "foundry",
+    "vtt",
+    "module"
+  ]
+}
