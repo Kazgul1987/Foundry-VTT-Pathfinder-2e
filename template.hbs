@@ -1,0 +1,12 @@
+<div class="gift-tracker">
+  <h3>Gift auf Waffe</h3>
+  <div class="gift-status">
+    {{#if hasPoison}}
+      <p>Die Waffe ist mit {{poisonName}} vergiftet.</p>
+      <button class="remove-poison">Gift entfernen</button>
+    {{else}}
+      <p>Die Waffe ist nicht vergiftet.</p>
+      <button class="apply-poison">Gift auftragen</button>
+    {{/if}}
+  </div>
+</div>
