@@ -1,14 +1,20 @@
 {
-  "name": "apply-poison",
+  "id": "apply-poison",
   "title": "Apply Poison",
   "description": "A Foundry VTT module to apply poison to weapons.",
   "version": "0.1.0",
   "author": "Kazgul1987",
-  "minimumCoreVersion": "0.8.6",
-  "compatibleCoreVersion": "0.8.6",
-  "scripts": [
-    "module.js",
-    "main.js"
+  "compatibility": {
+        "minimum": "10",
+        "verified": "10"
+  },
+  "relationships": {
+        "systems": [
+            {
+                "id": "pf2e",
+                "type": "system"
+            }
+        ],
   ],
  // "dependencies": {
  //   "some-module": "1.2.3"
