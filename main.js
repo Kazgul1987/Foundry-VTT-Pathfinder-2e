@@ -1,107 +1,89 @@
-Hooks.on("ready", () => {
-  // Add a button to the control token UI
-  Token.prototype._getControlButtons = function (buttons) {
-    buttons.push({
-      icon: "fa-dice-d20",
-      title: "Apply Poison",
-      button: true,
-      onClick: () => {
-        // Open weapon selection dialog
-        new ApplyPoisonDialog(this).render(true);
-      },
-    });
-  };
-});
+Hooks.on('ready', () => {
+  // Fügt den Button zum UI hinzu
+  game.settings.register('poisonous-weapon', 'showButton', {
+    name: 'Show Poison Button',
+    hint: 'Adds a button to the Token HUD for applying poison to a weapon.',
+    scope: 'client',
+    config: true,
+    default: true,
+    type: Boolean,
+  });
 
-class ApplyPoisonDialog extends Dialog {
-  constructor(token) {
-    super({
-      title: "Select a weapon to apply poison to",
-      content: "<p>Select a weapon to apply poison to</p>",
-      buttons: {},
-      closeOnSubmit: false,
-      popOut: true,
-    });
-    this.token = token;
-  }
+  TokenHUD.prototype._onPoisonButton = function(event) {
+    const actorId = this.token.actorId;
+    const token = canvas.tokens.get(this.object.id);
+    if (!actorId) {
+      ui.notifications.error('You must have an actor selected to apply poison!');
+      return;
+    }
 
-  async getData() {
-    const weapons = this.token.actor.items.filter(
-      (item) => item.type === "weapon"
-    );
-    return {
-      weapons,
-    };
-  }
+    const actor = game.actors.get(actorId);
+    if (!actor) {
+      ui.notifications.error(`Actor with id ${actorId} not found!`);
+      return;
+    }
 
-  activateListeners(html) {
-    html.find(".weapon-select").change((event) => {
-      const weaponId = event.target.value;
-      const weapon = this.token.actor.items.find(
-        (item) => item.id === weaponId
-      );
-      new ChoosePoisonDialog(this.token, weapon).render(true);
-      this.close();
-    });
-  }
-}
+    const weapons = actor.items.filter(item => item.type === 'weapon');
+    if (!weapons || weapons.length === 0) {
+      ui.notifications.error(`${actor.name} has no weapons!`);
+      return;
+    }
 
-class ChoosePoisonDialog extends Dialog {
-  constructor(token, weapon) {
-    super({
-      title: "Select a poison to apply",
-      content: "<p>Select a poison to apply</p>",
-      buttons: {},
-      closeOnSubmit: false,
-      popOut: true,
-    });
-    this.token = token;
-    this.weapon = weapon;
-  }
+    const weaponOptions = weapons.reduce((obj, weapon) => {
+      obj[weapon.id] = weapon.name;
+      return obj;
+    }, {});
 
-  async getData() {
-    const poisons = this.token.actor.items.filter(
-      (item) => item.type === "consumable" && item.data.data.consumableType === "poison"
-    );
-    return {
-      poisons,
-    };
-  }
+    new Dialog({
+      title: 'Select Weapon',
+      content: `
+        <div class="form-group">
+          <label>Choose the weapon to apply the poison to:</label>
+          <select id="weapon-select" name="weapon-select">
+            ${Object.entries(weaponOptions).map(([id, name]) => `<option value="${id}">${name}</option>`)}
+          </select>
+        </div>
+      `,
+      buttons: {
+        ok: {
+          icon: '<i class="fas fa-check"></i>',
+          label: 'Apply Poison',
+          callback: () => {
+            const weaponId = document.getElementById('weapon-select').value;
+            const weapon = actor.items.get(weaponId);
+            if (!weapon) {
+              ui.notifications.error(`Weapon with id ${weaponId} not found!`);
+              return;
+            }
 
-  activateListeners(html) {
-    html.find(".poison-select").change(async (event) => {
-      const poisonId = event.target.value;
-      const poison = this.token.actor.items.find(
-        (item) => item.id === poisonId
-      );
-      await this.token.setFlag("my-module", "applied-poison", {
-        weaponId: this.weapon.id,
-        poisonId: poison.id,
-      });
-      this.close();
-    });
-  }
-}
+            const poisons = actor.items.filter(item => item.type === 'consumable' && item.data.data.consumableType.value === 'poison');
+            if (!poisons || poisons.length === 0) {
+              ui.notifications.error(`${actor.name} has no poisons!`);
+              return;
+            }
 
-Hooks.on("preUpdateCombat", (combat, data) => {
-  for (const update of data.tokenUpdates) {
-    const token = canvas.tokens.get(update._id);
-    if (!token) continue;
-    const appliedPoison = token.getFlag("my-module", "applied-poison");
-    if (!appliedPoison) continue;
-    const weapon = token.actor.items.find(
-      (item) => item.id === appliedPoison.weaponId
-    );
-    const poison = token.actor.items.find(
-      (item) => item.id === appliedPoison.poisonId
-    );
-    if (!weapon || !poison) continue;
-    const saveDC = 10 + poison.data.data.save.dc;
-    const saveRoll = new Roll("1d20").roll();
-    if (saveRoll.total < saveDC) {
-      // Apply poison effect to target
-      const effect = {
-        label: `Poisoned with ${poison.name}`,
-        icon: "icons/svg/skull.svg",
-        tint: "#aa0000",
-        origin: `Actor.${
+            const poisonOptions = poisons.reduce((obj, poison) => {
+              obj[poison.id] = poison.name;
+              return obj;
+            }, {});
+
+            new Dialog({
+              title: 'Select Poison',
+              content: `
+                <div class="form-group">
+                  <label>Choose the poison to apply to ${weapon.name}:</label>
+                  <select id="poison-select" name="poison-select">
+                    ${Object.entries(poisonOptions).map(([id, name]) => `<option value="${id}">${name}</option>`)}
+                  </select>
+                </div>
+              `,
+              buttons: {
+                ok: {
+                  icon: '<i class="fas fa-check"></i>',
+                  label: 'Apply Poison',
+                  callback: () => {
+                    const poisonId = document.getElementById('poison-select').value;
+                    const poison = actor.items.get(poisonId);
+                    if (!poison) {
+                      ui.notifications.error(`Poison with id ${poisonId} not found!`);
+                     
